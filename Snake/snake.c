@@ -17,6 +17,7 @@
 
 #define GRID_SIZE 30
 #define GRID_DIM 1000
+#define SNAKE_MAX_LENGHT GRID_SIZE*GRID_SIZE
 
 enum{
   SNAKE_UP,
@@ -43,6 +44,8 @@ typedef struct snake Snake;
 
 Snake *head;
 Snake *tail;
+
+int snakeLenght = 1;
 
 void init_snake(){
   Snake *new = malloc(sizeof(Snake));
@@ -88,6 +91,7 @@ void increase_snake(){
   tail->next = new;
 
   tail = new;
+  snakeLenght++;
 }
 
 void move_snake(){
@@ -228,15 +232,26 @@ void render_apple(SDL_Renderer *renderer, int x, int y){
   
 }
 
+void trimitere_win() {
+    SDL_Quit(); // Închide SDL înainte de a porni alt program
+
+    const char *new_program = "./win"; // Calea către noul executabil
+    execlp(new_program, new_program, (char *)NULL);
+
+    // Dacă execvp eșuează:
+    perror("Eroare la lansarea noului program");
+    exit(EXIT_FAILURE);
+}
+
 void detect_apple(){
 
   if(head->x == Apple.x && head->y == Apple.y){
     gen_apple();
-    increase_snake();
+    increase_snake(snakeLenght);
   }
 }
 
-void reset_snake(){
+/*void reset_snake(){
   Snake *track = head;
   Snake *temp;
 
@@ -251,10 +266,33 @@ void reset_snake(){
   increase_snake();
   increase_snake();
 }
+*/
+
+void trimitere_start() {
+    SDL_Quit(); // Închide SDL înainte de a porni alt program
+
+    const char *new_program = "./start"; // Calea către noul executabil
+    execlp(new_program, new_program, (char *)NULL);
+
+    // Dacă execvp eșuează:
+    perror("Eroare la lansarea noului program");
+    exit(EXIT_FAILURE);
+}
+
+void trimitere_over() {
+    SDL_Quit(); // Închide SDL înainte de a porni alt program
+
+    const char *new_program = "./over"; // Calea către noul executabil
+    execlp(new_program, new_program, (char *)NULL);
+
+    // Dacă execvp eșuează:
+    perror("Eroare la lansarea noului program");
+    exit(EXIT_FAILURE);
+}
 
 void detect_crash(){
   if(head->x < 0 || head->x >= GRID_SIZE || head->y < 0 || head->y >= GRID_SIZE){
-    reset_snake();
+    trimitere_over();
   }
 
   Snake *track = head;
@@ -265,21 +303,10 @@ void detect_crash(){
   
   while(track != NULL){
     if(track->x == head->x && track->y == head->y){
-      reset_snake();
+      trimitere_over();
     }
     track = track->next;
   }
-}
-
-void run_other_executable() {
-    SDL_Quit(); // Închide SDL înainte de a porni alt program
-
-    const char *new_program = "./start"; // Calea către noul executabil
-    execlp(new_program, new_program, (char *)NULL);
-
-    // Dacă execvp eșuează:
-    perror("Eroare la lansarea noului program");
-    exit(EXIT_FAILURE);
 }
 
 int main(){
@@ -339,16 +366,16 @@ int main(){
 	  quit = true;
 	  break;
 	case SDLK_UP:
-	  head->dir = SNAKE_UP;
+	  if(head->dir != SNAKE_DOWN) head->dir = SNAKE_UP;
 	  break;
 	case SDLK_DOWN:
-	  head->dir = SNAKE_DOWN;
+	  if(head->dir != SNAKE_UP) head->dir = SNAKE_DOWN;
 	  break;
 	case SDLK_LEFT:
-	  head->dir = SNAKE_LEFT;
+	  if(head->dir != SNAKE_RIGHT) head->dir = SNAKE_LEFT;
 	  break;
 	case SDLK_RIGHT:
-	  head->dir = SNAKE_RIGHT;
+	  if(head->dir != SNAKE_LEFT) head->dir = SNAKE_RIGHT;
 	  break;
 	}
 	break;
@@ -359,6 +386,11 @@ int main(){
       ///render loop start
       move_snake();
       detect_apple();
+
+      if(snakeLenght >= SNAKE_MAX_LENGHT){
+	trimitere_win();
+      }
+      
       detect_crash();
 
       render_grid(renderer, grid_x, grid_y);
@@ -372,8 +404,8 @@ int main(){
       SDL_Delay(100);
       
   }
-  run_other_executable();
-  reset_snake();
+  ///reset_snake();
+  
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
